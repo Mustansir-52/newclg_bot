@@ -2,13 +2,6 @@
    CAMPUS AI — script.js
 ════════════════════════════════════════════════════════════ */
 
-// Auth guard
-const token = localStorage.getItem("access_token");
-const role  = localStorage.getItem("user_role");
-if (!token || role === "admin") {
-  window.location.href = "/login.html";
-}
-
 /* ── Config ───────────────────────────────────────────────── */
 const BACKEND_URL = 'https://newclg-bot-backend.onrender.com/chat';
 const ANN_URL     = 'https://newclg-bot-backend.onrender.com/admin/announcements/active';
@@ -103,9 +96,7 @@ function _markSeen(id) {
 
 async function loadAnnouncements() {
   try {
-    const res = await fetch(ANN_URL, {
-      headers: { "Authorization": "Bearer " + token }
-    });
+    const res = await fetch(ANN_URL);
     if (!res.ok) return;
     const items = await res.json();
     const seen  = _seenIds();
@@ -317,10 +308,9 @@ async function sendMessage(text) {
   try {
     const res = await fetch(BACKEND_URL, {
       method:'POST',
-      headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+token },
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ message:text, sessionId })
     });
-    if (res.status===401) { alert("Session expired. Please login again."); localStorage.removeItem("access_token"); window.location.href="login.html"; return; }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data  = await res.json();
     const reply = (data.reply || data.answer || '⚠️ No reply received.').trim();
@@ -355,11 +345,6 @@ msgInput.addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey) { 
 sendBtn.addEventListener('click', () => { if(!sendBtn.disabled) sendMessage(msgInput.value); });
 
 /* ── Logout ───────────────────────────────────────────────── */
-document.getElementById("logout-btn").addEventListener("click", () => {
-  localStorage.removeItem("access_token");
-  window.location.href = "login.html";
-});
-
 /* ── Clear / new chat ─────────────────────────────────────── */
 function clearChat() { messages=[]; persist(); if(chatCol){chatCol.remove();chatCol=null;} renderAll(); newSession(); closeMenu(); }
 clearBtn.addEventListener('click', clearChat);
