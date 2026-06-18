@@ -392,7 +392,6 @@ body { display: flex; }
   line-height: 1.6;
 }
 
-/* ── ROLE TOGGLE (auth pages) ──────────────── */
 .role-toggle {
   display: flex;
   gap: 6px;
@@ -425,7 +424,6 @@ body { display: flex; }
   box-shadow: 0 2px 8px rgba(16,163,127,0.3);
 }
 
-/* ── ADMIN BADGE (admin-register) ─────────── */
 .admin-badge {
   display: inline-flex;
   align-items: center;

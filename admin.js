@@ -4,36 +4,20 @@
 
 const BASE_URL = "https://newclg-bot-backend.onrender.com";
 
-// ── Auth guard ────────────────────────────────────────────
-const token = localStorage.getItem("access_token");
-const role  = localStorage.getItem("user_role");
-if (!token || role !== "admin") window.location.href = "login.html";
-
-const payload = JSON.parse(atob(token.split(".")[1]));
-document.getElementById("admin-name-display").textContent =
-  payload.username || payload.sub || "Admin";
-
-function authHeaders() {
-  return { "Content-Type": "application/json", "Authorization": "Bearer " + token };
-}
+// ── Admin setup ────────────────────────────────────────────
+const adminName = document.getElementById("admin-name-display");
+if (adminName) adminName.textContent = "Admin";
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(BASE_URL + path, {
     ...options,
-    headers: { ...authHeaders(), ...(options.headers || {}) },
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
-  if (res.status === 401 || res.status === 403) {
-    alert("Session expired. Please log in again.");
-    logout();
-    return null;
-  }
   return res;
 }
 
 function logout() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("user_role");
-  window.location.href = "login.html";
+  window.location.href = "index.html";
 }
 
 // ── Tab navigation ─────────────────────────────────────────
@@ -50,7 +34,6 @@ navItems.forEach(btn => {
     if (tab === "day-orders"    && !doLoaded)  loadDayOrders();
     if (tab === "timetable"     && !ttLoaded)  initTimetable();
     if (tab === "announcements" && !annLoaded) loadAnnouncements();
-    if (tab === "students"      && !stuLoaded) loadStudents();
     closeSidebar();
   });
 });
@@ -665,56 +648,7 @@ async function saveAnnouncement() {
   else { const d=await res.json(); alert("Error: "+(d.error||"Unknown")); }
 }
 
-// ════════════════════════════════════════════════════════════
-//  STUDENTS
-// ════════════════════════════════════════════════════════════
 
-let stuLoaded = false, stuData = [];
-
-async function loadStudents() {
-  stuLoaded = true;
-  document.getElementById("stu-loading").style.display = "";
-  document.getElementById("stu-table").style.display   = "none";
-  document.getElementById("stu-empty").style.display   = "none";
-  const res = await apiFetch("/admin/students");
-  if (!res) return;
-  stuData = await res.json();
-  renderStudents(stuData);
-}
-
-function renderStudents(data) {
-  document.getElementById("stu-loading").style.display = "none";
-  if (data.length === 0) {
-    document.getElementById("stu-table").style.display = "none";
-    document.getElementById("stu-empty").style.display = "";
-    return;
-  }
-  document.getElementById("stu-table").style.display = "";
-  document.getElementById("stu-empty").style.display = "none";
-  const tbody = document.getElementById("stu-tbody");
-  tbody.innerHTML = "";
-  data.forEach(s => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escHtml(s.name)}</td>
-      <td><code style="font-family:var(--font-mono,monospace);font-size:12px">${escHtml(s.register_number)}</code></td>
-      <td>${escHtml(s.department)}</td>
-      <td><span class="badge badge-blue">Year ${s.year}</span></td>
-      <td><div class="actions-cell">
-        <button class="btn-icon danger" onclick="confirmDelete('student',${s.id},'${escHtml(s.name)}')" title="Delete">${iconDelete()}</button>
-      </div></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function filterStudents() {
-  const q = document.getElementById("student-search").value.toLowerCase();
-  renderStudents(stuData.filter(s =>
-    s.name.toLowerCase().includes(q) ||
-    s.register_number.toLowerCase().includes(q) ||
-    s.department.toLowerCase().includes(q)
-  ));
-}
 
 // ════════════════════════════════════════════════════════════
 //  CONFIRM DELETE
@@ -734,14 +668,12 @@ async function deleteItem(type, id) {
   const paths = {
     "day-order":    `/admin/day-orders/${id}`,
     "announcement": `/admin/announcements/${id}`,
-    "student":      `/admin/students/${id}`,
   };
   const res = await apiFetch(paths[type], { method: "DELETE" });
   if (!res) return;
   if (res.ok) {
     if (type === "day-order")    { doLoaded=false;  loadDayOrders(); }
     if (type === "announcement") { annLoaded=false; loadAnnouncements(); }
-    if (type === "student")      { stuLoaded=false; loadStudents(); }
   } else {
     const d = await res.json();
     alert("Delete failed: " + (d.error || "Unknown"));
@@ -768,3 +700,4 @@ document.querySelectorAll(".modal-overlay").forEach(overlay => {
 
 // ── Boot ───────────────────────────────────────────────────
 loadDayOrders();
+
